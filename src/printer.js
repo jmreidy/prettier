@@ -965,6 +965,21 @@ function genericPrintNoParens(path, options, print, args) {
 
       return concat(parts);
     case "ConditionalExpression":
+      if (n.alternate.type === 'JSXElement') {
+        return group(
+          concat([
+            path.call(print, "test"),
+            " ? ",
+            path.call(print, "consequent"),
+            " : ",
+            concat([
+              path.call(print, "alternate"),
+            ]),
+            line,
+            ")"
+          ])
+        );
+      }
       return group(
         concat([
           path.call(print, "test"),
@@ -3173,6 +3188,7 @@ function printJSXElement(path, options, print) {
 
   // Group by line, recording if there was a hardline.
   let groups = [[]]; // Initialize the first line's group
+
   children.forEach((child, i) => {
     // leading and trailing JSX whitespace don't go into a group
     if (child === jsxWhitespace) {
@@ -3246,7 +3262,7 @@ function maybeWrapJSXElementInParens(path, elem) {
     JSXExpressionContainer: true,
     ExpressionStatement: true,
     CallExpression: true,
-    ConditionalExpression: true,
+    ConditionalExpression: false,
     LogicalExpression: true
   };
   if (NO_WRAP_PARENTS[parent.type]) {
@@ -3256,7 +3272,9 @@ function maybeWrapJSXElementInParens(path, elem) {
   return group(
     concat([
       ifBreak("("),
-      indent(concat([softline, elem])),
+      parent.type === 'ConditionalExpression'
+      ? concat([elem])
+      : indent(concat([softline, elem])),
       softline,
       ifBreak(")")
     ])
